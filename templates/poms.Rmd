@@ -1,0 +1,65 @@
+---
+title: "Recorder Feedback Example Email"
+params:
+    user_name: ""
+    user_data: ""
+    bg_data: ""
+    bg_computed_objects: ""
+    user_computed_objects: ""
+    user_email: "UNKNOWN"
+footer-date-time: "`r  format(Sys.time(), '%Y-%m-%d %H:%M:%S %Z')`"
+user-email: "`r params$user_email`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F,
+                      warning = F,
+                      message = FALSE, 
+                      fig.align = 'center',
+                      error=F,
+                      results='asis')
+```
+
+
+```{r calculations, include=F}
+#here you can do simple calculations for generating metrics that you later include in the text of the email. However if you wish to do more complex calculations it is recommended that these are done via prior (method tbc)
+
+
+
+```
+
+```{r packages, include =F}
+library(dplyr) #wrangling
+library(ggplot2) #plotting
+library(htmltools)
+library(tidyr)
+```
+
+
+
+# Hello `r params$user_name`!
+
+You have recorded **`r params$user_computed_objects$mean_n_insects`** insects this year across **`r params$user_computed_objects$mean_n_fit_counts`** FIT counts. Nice one!
+
+On average, other FIT counters did about **`r round(params$bg_computed_objects$mean_n_fit_counts)`** FIT counts. Wow!
+
+Let's take a look at the types of insects you most commonly observed:
+
+```{r, echo=F}
+params$user_data %>%
+  select(user_id,bumblebees,honeybees,solitary_bees,wasps) %>% 
+  pivot_longer(2:5) %>%
+  group_by(user_id,name) %>%
+  summarise(sum =sum(value,na.rm=T)) %>%
+  ggplot(aes(x = name,y = sum))+
+  geom_col(fill =  "#b31982") +
+  labs(x = "Group",y = "Count")+
+  theme_minimal(base_size = 15)
+
+```
+
+What a fantastic variety of insects!
+
+
+
+
