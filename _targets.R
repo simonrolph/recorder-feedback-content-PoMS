@@ -8,7 +8,7 @@ tar_option_set(
   controller = crew_controller_local(workers = 4)
 )
 
-tar_option_set(packages = c("dplyr", "ggplot2","rmarkdown"))
+tar_option_set(packages = c("dplyr", "ggplot2","rmarkdown","tidyr"))
 
 #load functions needed
 source("R/render_content.R")
