@@ -1,4 +1,5 @@
 compute_objects <- function(data){
+  
   # pivoted longer
   long_data <- data %>%
     pivot_longer(c(bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other),names_to = "group",values_to = "count")
@@ -32,7 +33,7 @@ compute_objects <- function(data){
   if(nrow(flower_types_recorded)<16){
     flower_types_missing <- data.frame(target_flower = flower_types$x[!(flower_types$x %in% flower_types_recorded$target_flower)],n = 0)
     flower_types_recorded <- rbind(flower_types_recorded,flower_types_missing)
-  }
+  } 
   
   # count patterns
   daily_counts <- data %>% 

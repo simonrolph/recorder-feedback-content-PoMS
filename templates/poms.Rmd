@@ -50,19 +50,35 @@ You have recorded **`r params$user_computed_objects$mean_n_insects`** insects in
 last_count <- params$user_data %>% arrange(as.POSIXct(desc(date_from))) %>% head(1)
 
 last_count2 <- last_count %>%
-    pivot_longer(c(bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other),names_to = "group",values_to = "count")
+    pivot_longer(c(bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other),names_to = "group",values_to = "count") %>%
+  mutate(group = recode(group, 
+                      bumblebees = "Bumblebees",
+                      honeybees = "Honeybees",
+                      solitary_bees = "Solitary Bees",
+                      wasps = "Wasps",
+                      hoverflies = "Hoverflies",
+                      other_flies = "Other Flies",
+                      butterflies_moths = "Butterflies and Moths",
+                      beetles = "Beetles",
+                      insects_small = "Small Insects",
+                      insects_other = "Other Insects")) %>%
+  mutate(group = factor(group,
+                      levels = rev(c("Bumblebees", "Honeybees", "Solitary Bees", "Wasps", 
+                                 "Hoverflies", "Other Flies", "Butterflies and Moths",
+                                 "Beetles", "Small Insects", "Other Insects"))))
 
 ```
 
-Your most recent FIT count you did was on `r last_count$date_from`, you recorded `r last_count$all_insects_total` insects and the target flower was: `r last_count$target_flower`.
+Your most recent FIT count you did was on `r last_count$date_from`, you recorded `r sum(last_count2$count, na.rm=T)` insects and the target flower was: `r last_count$target_flower`. `r if_else(sum(last_count2$count, na.rm=T)==0,"Even though you recorded no insects your FIT Count still provides us with valuable data about pollinating insects!","") `
 
 ```{r}
-last_count2 %>% ggplot(aes(x= group, y= count))+
+if(sum(last_count2$count, na.rm=T)>0){
+  last_count2 %>% ggplot(aes(y= group, x= count))+
   geom_col(fill = "#b31982")+
   theme_minimal(base_size = 15) +
-  labs(x = "Pollinator group",y = "Count") +
-  coord_flip()
-  
+  labs(y = "Pollinator group",x = "Count")+
+  scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(min(x), (max(x) + 1) * 1.1))))) # only integer values
+}
 
 ```
 
@@ -112,30 +128,64 @@ params$user_computed_objects$flower_types_recorded %>%
   mutate(" "=if_else(n>0,"✅",  " ") )%>%
   select(" ",target_flower,n) %>%
   rename("Target Flower" = "target_flower","Fit Counts"="n") %>%
-  kable()
+  kable() 
 ```
 
 ## Insect diversity
 
-Let's take a look at the types of insects you most commonly observed:
+On average, you observed `r median(params$user_data$all_insects_total, na.rm=T)` insects per fit count. Let's take a look at the types of insects you most commonly observed per FIT Count, and how that compares to other FIT Counters:
 
 ```{r, echo=F}
-params$user_data %>%
-  select(user_id,bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other) %>% 
-  pivot_longer(-user_id) %>%
+#user's taxon groups proportions
+user_diversity <- params$user_data %>%
+  select(user_id,sample_id,bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other) %>%
+  pivot_longer(c(-user_id,-sample_id)) %>%
   group_by(user_id,name) %>%
-  summarise(sum =sum(value,na.rm=T)) %>%
-  ggplot(aes(x = name,y = sum))+
-  geom_col(fill =  "#b31982") +
-  labs(x = "Group",y = "Count")+
+  summarise(average_count_per_fit = median(value,na.rm=T)) %>%
+  mutate(you = T)
+            
+
+bg_diversity <- params$bg_data %>%
+  select(user_id,sample_id,bumblebees,honeybees,solitary_bees,wasps,hoverflies,other_flies,butterflies_moths,beetles,insects_small,insects_other) %>%
+  pivot_longer(c(-user_id,-sample_id)) %>%
+  group_by(user_id,name) %>%
+  summarise(average_count_per_fit = median(value,na.rm=T)) %>%
+  group_by(name) %>%
+  summarise(average_count_per_fit = mean(average_count_per_fit,na.rm=T)) %>%
+  mutate(you = F)
+
+diversity <- bind_rows(user_diversity,bg_diversity) %>%
+  mutate(name = recode(name, 
+                      bumblebees = "Bumblebees",
+                      honeybees = "Honeybees",
+                      solitary_bees = "Solitary Bees",
+                      wasps = "Wasps",
+                      hoverflies = "Hoverflies",
+                      other_flies = "Other Flies",
+                      butterflies_moths = "Butterflies and Moths",
+                      beetles = "Beetles",
+                      insects_small = "Small Insects",
+                      insects_other = "Other Insects")) %>%
+  mutate(name = factor(name,
+                      levels = rev(c("Bumblebees", "Honeybees", "Solitary Bees", "Wasps", 
+                                 "Hoverflies", "Other Flies", "Butterflies and Moths",
+                                 "Beetles", "Small Insects", "Other Insects"))))
+
+
+
+diversity %>%
+  ggplot(aes(y = name,x = average_count_per_fit,fill = you))+
+  geom_col(position = "dodge") +
+  scale_fill_manual(labels = c("Other FIT Counters","You"),values=c("grey","#b31982"))+
+  labs(y = "Group",x = "Count")+
   theme_minimal(base_size = 15)+
-  coord_flip()
+  theme(legend.position="top",legend.title = element_blank())
 
 ```
 
-Here's a bee!
+<!--Here's a bee!
 
-![](static/insect line drawings/clker illustrations/Honeybees.png){width=100px}
+![](static/insect line drawings/clker illustrations/Honeybees.png){width=100px}-->
 
 
 
